@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>旅行账本</title>
+<meta name="description" content="多币种旅行记账 · 按消费日历史汇率折算人民币" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<meta name="theme-color" content="#FAF6F1" />
+<!-- iOS 添加到主屏幕 -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="旅行账本" />
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+
+<!-- 依赖（首次联网加载，Service Worker 缓存后离线可用） -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<!-- 关键垫片：lucide-react UMD 读取的是小写全局 react（实测其包装为 d(a.LucideReact={}, a.react)） -->
+<script>window.react = window.React;</script>
+<script crossorigin src="https://unpkg.com/lucide-react@0.436.0/dist/umd/lucide-react.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+
+<style>
+  html, body, #root { height: 100%; margin: 0; }
+  body { background: #EBEBEE; }
+  /* 启动占位（React 渲染后自动替换 #root 内容） */
+  .boot { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font-family: -apple-system, "SF Pro Text", "PingFang SC", sans-serif; color: #8E8E93; }
+  .boot-icon { width: 64px; height: 64px; border-radius: 16px; background: #FF4F62; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 30px; font-weight: 800; }
+  .boot-spin { width: 18px; height: 18px; border: 2.5px solid #E5E0DA; border-top-color: #FF4F62; border-radius: 50%; animation: sp 0.8s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="root">
+  <div class="boot">
+    <div class="boot-icon">¥</div>
+    <div class="boot-spin"></div>
+    <div style="font-size:13px">正在加载旅行账本…</div>
+  </div>
+</div>
+
+<!-- 应用主体（Babel 浏览器端转译 JSX；SW 缓存后离线可用） -->
+<script type="text/babel" data-presets="react" src="./app.jsx"></script>
+
+<script>
+  // 注册 Service Worker（离线缓存 + 历史汇率缓存）
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
