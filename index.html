@@ -26,14 +26,41 @@
 <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
 
 <style>
-  html, body, #root { height: 100%; margin: 0; }
-  body { background: #EBEBEE; }
+  :root { --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); }
+  html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
+  body { position: fixed; inset: 0; width: 100%; background: #EBEBEE; touch-action: manipulation; }
+  #root { height: 100%; overflow: hidden; }
   /* 启动占位（React 渲染后自动替换 #root 内容） */
   .boot { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font-family: -apple-system, "SF Pro Text", "PingFang SC", sans-serif; color: #8E8E93; }
   .boot-icon { width: 64px; height: 64px; border-radius: 16px; background: #FF4F62; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 30px; font-weight: 800; }
   .boot-spin { width: 18px; height: 18px; border: 2.5px solid #E5E0DA; border-top-color: #FF4F62; border-radius: 50%; animation: sp 0.8s linear infinite; }
   @keyframes sp { to { transform: rotate(360deg); } }
 </style>
+<script>
+/* iOS 独立模式安全区兜底：部分 iOS 版本在 PWA 里 env(safe-area-inset-*) 返回 0，
+   探测到该情况时按机型高度估算并写入 CSS 变量（应用内所有安全区 padding 都读取该变量）。 */
+(function () {
+  var standalone = (navigator.standalone === true) || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+  if (!standalone) return;
+  function apply() {
+    try {
+      var probe = document.createElement("div");
+      probe.style.cssText = "position:fixed;left:0;top:0;width:1px;visibility:hidden;pointer-events:none;height:env(safe-area-inset-top,0px)";
+      document.body.appendChild(probe);
+      var h = probe.getBoundingClientRect().height;
+      probe.remove();
+      if (h >= 20) return; // env() 正常，无需兜底
+      var sh = Math.max(screen.height, screen.width);
+      var top = sh >= 852 ? 59 : (sh >= 812 ? 47 : 20);   // 灵动岛 / 刘海 / 传统
+      var bottom = sh >= 812 ? 34 : 0;                     // Home 指示条
+      var r = document.documentElement.style;
+      r.setProperty("--safe-top", top + "px");
+      r.setProperty("--safe-bottom", bottom + "px");
+    } catch (e) { }
+  }
+  if (document.body) apply(); else window.addEventListener("DOMContentLoaded", apply);
+})();
+</script>
 </head>
 <body>
 <div id="root">

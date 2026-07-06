@@ -1,50 +1,13 @@
-/* 旅行账本 · 独立部署版（由 v6.jsx 生成，勿手改；改动请回源文件重新生成） */
-const { useState, useEffect, useMemo, useRef } = React;
-/* 图标逐个兜底：任何图标在 CDN 版本中缺失时渲染占位而非崩溃 */
-const _LFb = (props) => React.createElement("svg", { width: props.size || 24, height: props.size || 24 });
-const _L = typeof LucideReact !== "undefined" ? LucideReact : {};
-const Wallet = _L.Wallet || _LFb;
-const PieChart = _L.PieChart || _LFb;
-const Globe = _L.Globe || _LFb;
-const Briefcase = _L.Briefcase || _LFb;
-const Plus = _L.Plus || _LFb;
-const ChevronRight = _L.ChevronRight || _LFb;
-const ChevronDown = _L.ChevronDown || _LFb;
-const X = _L.X || _LFb;
-const Search = _L.Search || _LFb;
-const SlidersHorizontal = _L.SlidersHorizontal || _LFb;
-const RefreshCw = _L.RefreshCw || _LFb;
-const Download = _L.Download || _LFb;
-const Trash2 = _L.Trash2 || _LFb;
-const Pencil = _L.Pencil || _LFb;
-const Check = _L.Check || _LFb;
-const AlertTriangle = _L.AlertTriangle || _LFb;
-const Eye = _L.Eye || _LFb;
-const EyeOff = _L.EyeOff || _LFb;
-const BarChart3 = _L.BarChart3 || _LFb;
-const MoreHorizontal = _L.MoreHorizontal || _LFb;
-const MapPin = _L.MapPin || _LFb;
-const Calendar = _L.Calendar || _LFb;
-const Crosshair = _L.Crosshair || _LFb;
-const ImagePlus = _L.ImagePlus || _LFb;
-const Bookmark = _L.Bookmark || _LFb;
-const Plane = _L.Plane || _LFb;
-const Lightbulb = _L.Lightbulb || _LFb;
-const LayoutGrid = _L.LayoutGrid || _LFb;
-const Utensils = _L.Utensils || _LFb;
-const BedDouble = _L.BedDouble || _LFb;
-const Bus = _L.Bus || _LFb;
-const ShoppingBag = _L.ShoppingBag || _LFb;
-const Smile = _L.Smile || _LFb;
-const Camera = _L.Camera || _LFb;
-const Wifi = _L.Wifi || _LFb;
-const HeartPulse = _L.HeartPulse || _LFb;
-const Music = _L.Music || _LFb;
-const Tag = _L.Tag || _LFb;
-const Flag = _L.Flag || _LFb;
-const Save = _L.Save || _LFb;
-const Upload = _L.Upload || _LFb;
-{ const _miss = ["Wallet","PieChart","Globe","Briefcase","Plus","ChevronRight","ChevronDown","X","Search","SlidersHorizontal","RefreshCw","Download","Trash2","Pencil","Check","AlertTriangle","Eye","EyeOff","BarChart3","MoreHorizontal","MapPin","Calendar","Crosshair","ImagePlus","Bookmark","Plane","Lightbulb","LayoutGrid","Utensils","BedDouble","Bus","ShoppingBag","Smile","Camera","Wifi","HeartPulse","Music","Tag","Flag","Save","Upload"].filter(n => !_L[n]); if (_miss.length) console.warn("图标缺失(显示占位):", _miss.join(",")); }
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import * as d3 from "d3";
+import {
+  Wallet, PieChart, Globe, Briefcase, Plus, ChevronRight, ChevronDown, X,
+  Search, SlidersHorizontal, RefreshCw, Download, Trash2, Pencil, Check, AlertTriangle,
+  Eye, EyeOff, BarChart3, MoreHorizontal, MapPin, Calendar, Crosshair, ImagePlus,
+  Bookmark, Plane, Lightbulb, LayoutGrid, Utensils, BedDouble, Bus, ShoppingBag, Smile,
+  Camera, Wifi, HeartPulse, Music, Tag, Flag, Save, Upload,
+} from "lucide-react";
+
 /* ═══════════ 设计令牌 ═══════════ */
 const C = {
   bg: "#FAF6F1", card: "#FFFFFF", fill: "#F4F0EA",
@@ -243,7 +206,7 @@ async function backfillPending(expenses) { const list = Array.isArray(expenses) 
 
 
 /* ═══════════════════════ 主组件 ═══════════════════════ */
-function App() {
+export default function App() {
   const [ready, setReady] = useState(false);
   const [expenses, setExpenses] = useState([]);
   const [trips, setTrips] = useState([]);
@@ -1146,5 +1109,3 @@ function MenuItem({ icon, label, onClick }) {
     <span style={{ color: C.accent }}>{icon}</span><span style={{ fontSize: 15.5, fontWeight: 500 }}>{label}</span>
   </button>;
 }
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
