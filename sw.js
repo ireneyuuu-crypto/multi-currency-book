@@ -7,7 +7,7 @@
  * - 其它（地理编码等）：直连网络，不缓存
  * 注意：SW 缓存只存放静态资源与不可变历史汇率，不作为业务数据存储；账目数据在 IndexedDB/localStorage。
  */
-const VERSION = "v1.3.0";
+const VERSION = "v1.3.1";
 const CORE_CACHE = `core-${VERSION}`;
 const CDN_CACHE = "cdn-v1";
 const RATE_CACHE = "rates-v1";

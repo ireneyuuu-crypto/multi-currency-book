@@ -30,6 +30,9 @@
   html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
   body { position: fixed; inset: 0; width: 100%; background: #EBEBEE; touch-action: manipulation; }
   #root { height: 100%; overflow: hidden; }
+  /* App 外壳跟随真实视口高度（覆盖内联 100vh；body 为 fixed inset:0，其高度即实际可视区，全机型/横竖屏自适应） */
+  #root > div { height: 100% !important; min-height: 100% !important; }
+  #root > div > div { height: 100% !important; min-height: 100% !important; }
   /* 启动占位（React 渲染后自动替换 #root 内容） */
   .boot { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font-family: -apple-system, "SF Pro Text", "PingFang SC", sans-serif; color: #8E8E93; }
   .boot-icon { width: 64px; height: 64px; border-radius: 16px; background: #FF4F62; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 30px; font-weight: 800; }
@@ -37,28 +40,40 @@
   @keyframes sp { to { transform: rotate(360deg); } }
 </style>
 <script>
-/* iOS 独立模式安全区兜底：部分 iOS 版本在 PWA 里 env(safe-area-inset-*) 返回 0，
-   探测到该情况时按机型高度估算并写入 CSS 变量（应用内所有安全区 padding 都读取该变量）。 */
+/* iOS 独立模式安全区自适应：
+   ① env() 正常 → 完全交给 env()，不做任何干预
+   ② env() 失效且内容真的顶到屏幕最上沿（全屏模式）→ 按屏幕级别估算状态栏高度
+   ③ env() 失效但系统已自行扣掉状态栏（screen.height - innerHeight ≥ 20）→ 顶部为 0，只补底部指示条
+   适配所有 iPhone：判断基于真实视口差值，不写死机型。 */
 (function () {
   var standalone = (navigator.standalone === true) || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
   if (!standalone) return;
-  function apply() {
+  function measure(expr) {
     try {
-      var probe = document.createElement("div");
-      probe.style.cssText = "position:fixed;left:0;top:0;width:1px;visibility:hidden;pointer-events:none;height:env(safe-area-inset-top,0px)";
-      document.body.appendChild(probe);
-      var h = probe.getBoundingClientRect().height;
-      probe.remove();
-      if (h >= 20) return; // env() 正常，无需兜底
-      var sh = Math.max(screen.height, screen.width);
-      var top = sh >= 852 ? 59 : (sh >= 812 ? 47 : 20);   // 灵动岛 / 刘海 / 传统
-      var bottom = sh >= 812 ? 34 : 0;                     // Home 指示条
-      var r = document.documentElement.style;
-      r.setProperty("--safe-top", top + "px");
-      r.setProperty("--safe-bottom", bottom + "px");
-    } catch (e) { }
+      var d = document.createElement("div");
+      d.style.cssText = "position:fixed;left:0;top:0;width:1px;visibility:hidden;pointer-events:none;height:" + expr;
+      document.body.appendChild(d);
+      var h = d.getBoundingClientRect().height;
+      d.remove(); return h;
+    } catch (e) { return 0; }
   }
-  if (document.body) apply(); else window.addEventListener("DOMContentLoaded", apply);
+  function apply() {
+    var pt = measure("env(safe-area-inset-top,0px)");
+    var pb = measure("env(safe-area-inset-bottom,0px)");
+    var r = document.documentElement.style;
+    if (pt >= 20 || pb >= 10) { r.removeProperty("--safe-top"); r.removeProperty("--safe-bottom"); return; } // env 正常
+    var sMax = Math.max(screen.height, screen.width);
+    var tall = sMax >= 812;                                    // 刘海/灵动岛机型（含 mini）
+    var gap = screen.height - window.innerHeight;              // 系统已扣掉的顶部高度
+    var top = gap >= 20 ? 0 : (sMax >= 852 ? 59 : (tall ? 47 : 20));
+    var bottom = tall ? 34 : 0;                                // Home 指示条
+    r.setProperty("--safe-top", top + "px");
+    r.setProperty("--safe-bottom", bottom + "px");
+  }
+  function run() { if (document.body) setTimeout(apply, 50); }
+  if (document.readyState !== "loading") run(); else window.addEventListener("DOMContentLoaded", run);
+  window.addEventListener("orientationchange", function () { setTimeout(apply, 300); });
+  if (window.visualViewport) visualViewport.addEventListener("resize", function () { setTimeout(apply, 100); });
 })();
 </script>
 </head>
