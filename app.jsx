@@ -849,7 +849,7 @@ function Empty({ Icon, title, desc, action, onAction }) {
 /* ═══════════ Bottom Sheet 基座 ═══════════ */
 function Sheet({ children, onClose, pad = 20 }) {
   return <div className="absolute inset-0 flex items-end justify-center" style={{ background: "rgba(0,0,0,.4)", zIndex: 50 }} onClick={onClose}>
-    <div onClick={(e) => e.stopPropagation()} className="w-full overflow-y-auto" style={{ background: C.bg, borderTopLeftRadius: 26, borderTopRightRadius: 26, maxHeight: "92vh", padding: pad, paddingTop: 12, boxShadow: "0 -10px 40px rgba(0,0,0,.22)" }}>
+    <div onClick={(e) => e.stopPropagation()} className="w-full overflow-y-auto" style={{ background: C.bg, borderTopLeftRadius: 26, borderTopRightRadius: 26, maxHeight: "92vh", padding: pad, paddingTop: 12, boxShadow: "0 -10px 40px rgba(0,0,0,.22)", overflowX: "hidden", maxWidth: "100%" }}>
       <div style={{ width: 38, height: 5, borderRadius: 3, background: C.ter, margin: "0 auto 16px" }} />
       {children}
       <div style={{ height: "var(--safe-bottom, env(safe-area-inset-bottom))" }} />
@@ -878,6 +878,9 @@ function ExpenseSheet({ init, trips, activeTripId, onClose, onSave, onDelete }) 
   const [manualRate, setManualRate] = useState(isInitManual ? init.rate : null);
   const [manualTouched, setManualTouched] = useState(false);
   const resolverRef = useRef(makeResolver(getRateForDate));
+  const amtRef = useRef(null);
+  // 弹出动画结束后再聚焦（立即 autoFocus 会在部分 iOS 上引发视口缩放/横移）
+  useEffect(() => { if (!init) { const t = setTimeout(() => { try { amtRef.current && amtRef.current.focus(); } catch { } }, 450); return () => clearTimeout(t); } }, []);
   const cur = curOf(f.currency);
 
   // 按 (币种, 消费日期) 取历史汇率；竞态守卫：仅最新一次结果被采用
@@ -906,13 +909,13 @@ function ExpenseSheet({ init, trips, activeTripId, onClose, onSave, onDelete }) 
 
   return <Sheet onClose={onClose}>
     <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", marginBottom: 18 }}>{init ? "编辑记录" : "记一笔"}</div>
-    {/* 大额输入 */}
-    <div className="flex items-center gap-3 mb-3 px-4 py-4 rounded-2xl" style={{ background: C.card, border: `1px solid ${C.sep}` }}>
+    {/* 金额输入（币种 + 金额同一行；金额框带明确底色，flex minWidth:0 防溢出） */}
+    <div className="flex items-center gap-2.5 mb-3 px-4 py-3.5 rounded-2xl" style={{ background: C.card, border: `1px solid ${C.sep}`, maxWidth: "100%" }}>
       <div className="relative shrink-0">
         <select value={f.currency} onChange={(e) => set("currency", e.target.value)} className="appearance-none outline-none rounded-xl px-3 py-2 font-bold" style={{ background: C.fill, color: C.ink, ...NUM, paddingRight: 26, fontSize: 16 }}>{CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}</select>
         <ChevronDown size={13} color={C.sec} style={{ position: "absolute", right: 8, top: 11, pointerEvents: "none" }} />
       </div>
-      <input type="number" inputMode="decimal" value={f.localAmount} onChange={(e) => set("localAmount", e.target.value)} placeholder="0.00" autoFocus className="flex-1 bg-transparent outline-none text-right" style={{ fontSize: 30, fontWeight: 800, color: C.ink, ...NUM }} />
+      <input ref={amtRef} type="number" inputMode="decimal" value={f.localAmount} onChange={(e) => set("localAmount", e.target.value)} placeholder="0.00" className="flex-1 outline-none text-right rounded-xl px-3" style={{ background: C.fill, fontSize: 26, fontWeight: 800, color: C.ink, ...NUM, minWidth: 0, maxWidth: "100%", height: 42, border: "none" }} />
     </div>
     {/* 折算（按消费日期历史汇率） */}
     <div className="flex items-center justify-between px-4 py-3 rounded-2xl mb-5" style={{ background: needManual ? "#FFF1F2" : C.accentSoft }}>
