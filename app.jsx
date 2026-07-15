@@ -326,8 +326,9 @@ function App() {
 
   useEffect(() => { (async () => {
     const [e, t, r, s, p] = await Promise.all([store.get(K.exp), store.get(K.trips), store.get(K.rates), store.get(K.set), store.get(K.pidx)]);
-    const loadedExp = e ? migrateAllExpenses(e).list : [];
-    setExpenses(loadedExp); if (e && migrateAllExpenses(e).changed) store.set(K.exp, loadedExp);
+    const mig = e ? migrateAllExpenses(e) : { list: [], changed: false };
+    const loadedExp = mig.list;
+    setExpenses(loadedExp); if (mig.changed) store.set(K.exp, loadedExp);
     if (t) setTrips(t); if (s) setSettings(s); if (p) setPlaces(p);
     if (r) { setRates(r); setRateStatus("ok"); }
     setReady(true);
@@ -792,7 +793,8 @@ function MapScreen({ places, trips, expenses, tripSpend, onOpen, onToggleSaved, 
   const { paths, pins, journey } = useMemo(() => {
     if (!world) return { paths: [], pins: [], journey: "" };
     const projection = d3.geoNaturalEarth1(); let fit = world;
-    const fitPts = places.filter((p) => p && typeof p.lat === "number" && typeof p.lng === "number" && isFinite(p.lat) && isFinite(p.lng) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180);
+    const validCoord = (p) => p && typeof p.lat === "number" && typeof p.lng === "number" && isFinite(p.lat) && isFinite(p.lng) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180;
+    const fitPts = places.filter(validCoord);
     if (fitPts.length) { let a = Infinity, b = -Infinity, c = Infinity, d = -Infinity; fitPts.forEach((p) => { a = Math.min(a, p.lng); b = Math.max(b, p.lng); c = Math.min(c, p.lat); d = Math.max(d, p.lat); });
       const pd = Math.max(16, (b - a) * 0.3, (d - c) * 0.3); a -= pd; b += pd; c -= pd; d += pd; fit = { type: "Polygon", coordinates: [[[a, c], [b, c], [b, d], [a, d], [a, c]]] }; }
     try { projection.fitExtent([[pad, pad], [W - pad, H - pad]], fit); } catch { projection.fitExtent([[pad, pad], [W - pad, H - pad]], world); }
@@ -803,7 +805,6 @@ function MapScreen({ places, trips, expenses, tripSpend, onOpen, onToggleSaved, 
     }
     const path = d3.geoPath(projection);
     const paths = world.features.map((f, i) => ({ d: path(f), i }));
-    const validCoord = (p) => p && typeof p.lat === "number" && typeof p.lng === "number" && isFinite(p.lat) && isFinite(p.lng) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180;
     const pins = places.filter(validCoord).map((p) => { const xy = projection([p.lng, p.lat]); return xy ? { ...p, x: xy[0], y: xy[1] } : null; }).filter(Boolean);
     const sorted = [...places].filter(validCoord).sort((a, b) => (a.date < b.date ? -1 : 1)); let journey = "";
     sorted.forEach((p, i) => { const xy = projection([p.lng, p.lat]); if (xy) journey += (i ? " L" : "M") + xy[0].toFixed(1) + " " + xy[1].toFixed(1); });
