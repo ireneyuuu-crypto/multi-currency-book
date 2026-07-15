@@ -27,9 +27,11 @@
 
 <style>
   :root { --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); }
-  html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
-  body { position: fixed; inset: 0; width: 100%; background: #EBEBEE; touch-action: manipulation; }
-  #root { height: 100%; overflow: hidden; }
+  html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; -webkit-text-size-adjust: 100%; background: #FAF6F1; }
+  body { position: fixed; inset: 0; width: 100%; touch-action: manipulation; }
+  /* 高度自测量：--vvh 由 JS 按 visualViewport 实时写入，任何机型/系统版本都以真实可视高度为准 */
+  #root { height: var(--vvh, 100%); overflow: hidden; }
+  #root > div { background: #FAF6F1 !important; }
   /* App 外壳跟随真实视口高度（覆盖内联 100vh；body 为 fixed inset:0，其高度即实际可视区，全机型/横竖屏自适应） */
   #root > div { height: 100% !important; min-height: 100% !important; }
   #root > div > div { height: 100% !important; min-height: 100% !important; }
@@ -39,6 +41,21 @@
   .boot-spin { width: 18px; height: 18px; border: 2.5px solid #E5E0DA; border-top-color: #FF4F62; border-radius: 50%; animation: sp 0.8s linear infinite; }
   @keyframes sp { to { transform: rotate(360deg); } }
 </style>
+<script>
+/* 视口高度自测量：以 visualViewport 实测高度为准，规避各版本 iOS 的 100vh/100% 差异 */
+(function () {
+  function setVVH() {
+    try {
+      var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+      if (h > 0) document.documentElement.style.setProperty("--vvh", Math.round(h) + "px");
+    } catch (e) { }
+  }
+  setVVH();
+  window.addEventListener("resize", setVVH);
+  window.addEventListener("orientationchange", function () { setTimeout(setVVH, 300); });
+  if (window.visualViewport) visualViewport.addEventListener("resize", setVVH);
+})();
+</script>
 <script>
 /* iOS 独立模式安全区自适应：
    ① env() 正常 → 完全交给 env()，不做任何干预

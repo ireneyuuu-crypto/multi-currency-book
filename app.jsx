@@ -1,6 +1,5 @@
-/* 旅行账本 · 独立部署版（由 v6.jsx 生成，勿手改；改动请回源文件重新生成） */
+/* 旅行账本 · 独立部署版（由 v6.jsx 生成，勿手改） */
 const { useState, useEffect, useMemo, useRef } = React;
-/* 图标逐个兜底：任何图标在 CDN 版本中缺失时渲染占位而非崩溃 */
 const _LFb = (props) => React.createElement("svg", { width: props.size || 24, height: props.size || 24 });
 const _L = typeof LucideReact !== "undefined" ? LucideReact : {};
 const Wallet = _L.Wallet || _LFb;
@@ -156,9 +155,57 @@ function shrinkDataUrl(dataUrl, max = 420, q = 0.66) {
   }; img.onerror = () => res(null); img.src = dataUrl; });
 }
 function loadScript(src) { return new Promise((res, rej) => { if ([...document.scripts].some((s) => s.src === src)) return res(); const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
+// 表内城市：零网络、零误差；表外：多候选按“地名类型+重要度”择优，不盲信第一条。
+
+// [中文名, 英文名(小写), lat, lng, 国家/地区]
+const CITY_DB = [
+  // 北欧
+  ["奥斯陆","oslo",59.9139,10.7522,"挪威"],["斯德哥尔摩","stockholm",59.3293,18.0686,"瑞典"],["哥本哈根","copenhagen",55.6761,12.5683,"丹麦"],["赫尔辛基","helsinki",60.1699,24.9384,"芬兰"],["雷克雅未克","reykjavik",64.1466,-21.9426,"冰岛"],
+  // 西欧/南欧/中东欧
+  ["伦敦","london",51.5074,-0.1278,"英国"],["爱丁堡","edinburgh",55.9533,-3.1883,"英国"],["都柏林","dublin",53.3498,-6.2603,"爱尔兰"],["巴黎","paris",48.8566,2.3522,"法国"],["尼斯","nice",43.7102,7.2620,"法国"],["柏林","berlin",52.5200,13.4050,"德国"],["慕尼黑","munich",48.1351,11.5820,"德国"],["法兰克福","frankfurt",50.1109,8.6821,"德国"],["阿姆斯特丹","amsterdam",52.3676,4.9041,"荷兰"],["布鲁塞尔","brussels",50.8503,4.3517,"比利时"],["苏黎世","zurich",47.3769,8.5417,"瑞士"],["日内瓦","geneva",46.2044,6.1432,"瑞士"],["维也纳","vienna",48.2082,16.3738,"奥地利"],["布拉格","prague",50.0755,14.4378,"捷克"],["布达佩斯","budapest",47.4979,19.0402,"匈牙利"],["华沙","warsaw",52.2297,21.0122,"波兰"],["罗马","rome",41.9028,12.4964,"意大利"],["米兰","milan",45.4642,9.1900,"意大利"],["威尼斯","venice",45.4408,12.3155,"意大利"],["佛罗伦萨","florence",43.7696,11.2558,"意大利"],["马德里","madrid",40.4168,-3.7038,"西班牙"],["巴塞罗那","barcelona",41.3874,2.1686,"西班牙"],["里斯本","lisbon",38.7223,-9.1393,"葡萄牙"],["雅典","athens",37.9838,23.7275,"希腊"],["圣托里尼","santorini",36.3932,25.4615,"希腊"],["伊斯坦布尔","istanbul",41.0082,28.9784,"土耳其"],["莫斯科","moscow",55.7558,37.6173,"俄罗斯"],["圣彼得堡","saint petersburg",59.9311,30.3609,"俄罗斯"],
+  // 东亚
+  ["东京","tokyo",35.6762,139.6503,"日本"],["大阪","osaka",34.6937,135.5023,"日本"],["京都","kyoto",35.0116,135.7681,"日本"],["名古屋","nagoya",35.1815,136.9066,"日本"],["札幌","sapporo",43.0618,141.3545,"日本"],["福冈","fukuoka",33.5904,130.4017,"日本"],["那霸","naha",26.2124,127.6809,"日本"],["首尔","seoul",37.5665,126.9780,"韩国"],["釜山","busan",35.1796,129.0756,"韩国"],["济州","jeju",33.4996,126.5312,"韩国"],["台北","taipei",25.0330,121.5654,"中国台湾"],["香港","hong kong",22.3193,114.1694,"中国香港"],["澳门","macau",22.1987,113.5439,"中国澳门"],["北京","beijing",39.9042,116.4074,"中国"],["上海","shanghai",31.2304,121.4737,"中国"],["广州","guangzhou",23.1291,113.2644,"中国"],["深圳","shenzhen",22.5431,114.0579,"中国"],["成都","chengdu",30.5728,104.0668,"中国"],["三亚","sanya",18.2528,109.5119,"中国"],
+  // 东南亚/南亚
+  ["新加坡","singapore",1.3521,103.8198,"新加坡"],["曼谷","bangkok",13.7563,100.5018,"泰国"],["清迈","chiang mai",18.7883,98.9853,"泰国"],["普吉","phuket",7.8804,98.3923,"泰国"],["吉隆坡","kuala lumpur",3.1390,101.6869,"马来西亚"],["雅加达","jakarta",-6.2088,106.8456,"印度尼西亚"],["巴厘岛","bali",-8.4095,115.1889,"印度尼西亚"],["马尼拉","manila",14.5995,120.9842,"菲律宾"],["河内","hanoi",21.0285,105.8542,"越南"],["胡志明市","ho chi minh city",10.8231,106.6297,"越南"],["岘港","da nang",16.0544,108.2022,"越南"],["金边","phnom penh",11.5564,104.9282,"柬埔寨"],["暹粒","siem reap",13.3671,103.8448,"柬埔寨"],["仰光","yangon",16.8409,96.1735,"缅甸"],["加德满都","kathmandu",27.7172,85.3240,"尼泊尔"],["新德里","new delhi",28.6139,77.2090,"印度"],["孟买","mumbai",19.0760,72.8777,"印度"],["科伦坡","colombo",6.9271,79.8612,"斯里兰卡"],["马累","male",4.1755,73.5093,"马尔代夫"],
+  // 中东/非洲
+  ["迪拜","dubai",25.2048,55.2708,"阿联酋"],["阿布扎比","abu dhabi",24.4539,54.3773,"阿联酋"],["多哈","doha",25.2854,51.5310,"卡塔尔"],["利雅得","riyadh",24.7136,46.6753,"沙特阿拉伯"],["吉达","jeddah",21.4858,39.1925,"沙特阿拉伯"],["巴格达","baghdad",33.3152,44.3661,"伊拉克"],["开罗","cairo",30.0444,31.2357,"埃及"],["卢克索","luxor",25.6872,32.6396,"埃及"],["特拉维夫","tel aviv",32.0853,34.7818,"以色列"],["卡萨布兰卡","casablanca",33.5731,-7.5898,"摩洛哥"],["马拉喀什","marrakesh",31.6295,-7.9811,"摩洛哥"],["开普敦","cape town",-33.9249,18.4241,"南非"],["约翰内斯堡","johannesburg",-26.2041,28.0473,"南非"],["内罗毕","nairobi",-1.2921,36.8219,"肯尼亚"],
+  // 美洲
+  ["纽约","new york",40.7128,-74.0060,"美国"],["洛杉矶","los angeles",34.0522,-118.2437,"美国"],["旧金山","san francisco",37.7749,-122.4194,"美国"],["西雅图","seattle",47.6062,-122.3321,"美国"],["芝加哥","chicago",41.8781,-87.6298,"美国"],["波士顿","boston",42.3601,-71.0589,"美国"],["华盛顿","washington",38.9072,-77.0369,"美国"],["拉斯维加斯","las vegas",36.1699,-115.1398,"美国"],["檀香山","honolulu",21.3069,-157.8583,"美国"],["多伦多","toronto",43.6532,-79.3832,"加拿大"],["温哥华","vancouver",49.2827,-123.1207,"加拿大"],["蒙特利尔","montreal",45.5019,-73.5674,"加拿大"],["墨西哥城","mexico city",19.4326,-99.1332,"墨西哥"],["圣保罗","sao paulo",-23.5505,-46.6333,"巴西"],["里约热内卢","rio de janeiro",-22.9068,-43.1729,"巴西"],["布宜诺斯艾利斯","buenos aires",-34.6037,-58.3816,"阿根廷"],["利马","lima",-12.0464,-77.0428,"秘鲁"],["圣地亚哥","santiago",-33.4489,-70.6693,"智利"],
+  // 大洋洲
+  ["悉尼","sydney",-33.8688,151.2093,"澳大利亚"],["墨尔本","melbourne",-37.8136,144.9631,"澳大利亚"],["布里斯班","brisbane",-27.4698,153.0251,"澳大利亚"],["奥克兰","auckland",-36.8509,174.7645,"新西兰"],["皇后镇","queenstown",-45.0312,168.6626,"新西兰"],
+];
+
+function cityLookup(q) {
+  if (!q) return null;
+  const s = String(q).trim().toLowerCase().replace(/[市都]$/, "");
+  for (const [zh, en, lat, lng, country] of CITY_DB) {
+    if (s === zh || s === en) return { lat, lng, country, display: zh, source: "builtin" };
+  }
+  return null;
+}
+
+// Nominatim 多候选择优：优先“地名”类结果（城市/行政区等），再按 importance
+const PLACE_TYPES = new Set(["city", "town", "village", "municipality", "administrative", "suburb", "county", "state", "island", "hamlet", "locality"]);
+function pickBestNominatim(list) {
+  if (!Array.isArray(list) || !list.length) return null;
+  const scored = list.map((x) => ({
+    x,
+    s: ((x.class === "place" || PLACE_TYPES.has(x.type)) ? 10 : 0) + (Number(x.importance) || 0),
+  }));
+  scored.sort((a, b) => b.s - a.s);
+  return scored[0].x;
+}
+
 async function geocode(q) {
-  const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=zh&q=${encodeURIComponent(q)}`); const d = await r.json();
-  if (d && d[0]) { const parts = (d[0].display_name || "").split(",").map((x) => x.trim()); return { lat: +d[0].lat, lng: +d[0].lon, country: parts[parts.length - 1] || "", display: d[0].display_name }; }
+  const hit = cityLookup(q);                               // 常用城市：零网络、零误差
+  if (hit) return hit;
+  const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&accept-language=zh&q=${encodeURIComponent(q)}`);
+  const d = await r.json();
+  const best = pickBestNominatim(d);
+  if (best) {
+    const country = (best.address && best.address.country) || ((best.display_name || "").split(",").map((x) => x.trim()).pop()) || "";
+    return { lat: +best.lat, lng: +best.lon, country, display: best.display_name, source: "nominatim" };
+  }
   return null;
 }
 const daysBetween = (s, e) => { if (!s || !e) return 0; const a = new Date(s), b = new Date(e); return Math.max(1, Math.round((b - a) / 864e5) + 1); };
@@ -414,6 +461,7 @@ function App() {
       <div className="flex-1 overflow-y-auto" style={{ position: "relative" }}>
         {tab === "list" && <ListScreen {...{ scoped, expenses, trips, activeTrip, activeId: settings.activeTripId, totalCNY, hide, setHide, rateStatus, rates, search, setSearch, catFilter, setCatFilter, homeCover: settings.homeCover, homeColor: settings.homeColor, onPickTrip: (id) => persistSet({ ...settings, activeTripId: id }), onEdit: setEditing, onMenu: () => setMenu(true), onStats: () => setTab("stats"), onCustomizeBg: () => setBgEdit(true) }} />}
         {tab === "stats" && <StatsScreen {...{ expenses, trips, activeTrip, activeId: settings.activeTripId, hide, setHide, rates, homeCover: settings.homeCover, homeColor: settings.homeColor, onPickTrip: (id) => persistSet({ ...settings, activeTripId: id }), onMenu: () => setMenu(true), onCustomizeBg: () => setBgEdit(true) }} />}
+        {(tab === "map" || tab === "trips") && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "calc(var(--safe-top, env(safe-area-inset-top)) + 10px)", background: "linear-gradient(to bottom, #FAF6F1 62%, rgba(250,246,241,0))", zIndex: 55, pointerEvents: "none" }} />}
         {tab === "map" && <MapScreen {...{ places, trips, expenses, tripSpend, onOpen: setOpenPlace, onToggleSaved: toggleSavedPlace, onMenu: () => setMenu(true), onStats: () => setTab("stats") }} />}
         {tab === "trips" && <TripsScreen {...{ trips, activeId: settings.activeTripId, hide, setHide, tripSpend, tripExpCount, onOpen: (id) => { persistSet({ ...settings, activeTripId: id }); setTab("list"); }, onEdit: setTripModal, onNew: () => setTripModal("new"), onMenu: () => setMenu(true), onStats: () => setTab("stats") }} />}
       </div>
@@ -573,15 +621,24 @@ function ExpenseCard({ e, trips, onEdit }) {
 function StatsScreen({ expenses, trips, activeTrip, activeId, hide, setHide, rates, homeCover, homeColor, onPickTrip, onMenu, onCustomizeBg }) {
   const [range, setRange] = useState("all");
   const [cs, setCs] = useState(""); const [ce, setCe] = useState("");
+  const [periodMode, setPeriodMode] = useState("month"); // 按月 / 按年
   const base = useMemo(() => {
     let l = activeId === "all" ? expenses : expenses.filter((e) => e.tripId === activeId);
     const now = new Date(); const tISO = today();
-    if (range === "week") { const w = new Date(Date.now() - 6 * 864e5).toISOString().slice(0, 10); l = l.filter((e) => e.date >= w && e.date <= tISO); }
+    if (range === "week") { const w = addDaysStr(tISO, -6); l = l.filter((e) => e.date >= w && e.date <= tISO); }
     else if (range === "month") { const m = tISO.slice(0, 7); l = l.filter((e) => (e.date || "").slice(0, 7) === m); }
     else if (range === "custom" && cs && ce) { l = l.filter((e) => e.date >= cs && e.date <= ce); }
     return l;
   }, [expenses, activeId, range, cs, ce]);
   const total = base.reduce((s, e) => s + (e.cnyAmount || 0), 0);
+  const byPeriod = useMemo(() => {
+    const cut = periodMode === "year" ? 4 : 7;
+    const m = new Map();
+    base.forEach((e) => { const k = (e.expenseDate || e.date || "").slice(0, cut); if (!k) return; const o = m.get(k) || { v: 0, n: 0 }; o.v += (e.cnyAmount || 0); o.n += 1; m.set(k, o); });
+    const arr = [...m.entries()].map(([k, o]) => ({ k, ...o })).sort((a, b) => (a.k < b.k ? 1 : -1));
+    const max = arr.reduce((x, r) => Math.max(x, r.v), 0);
+    return { rows: arr.slice(0, periodMode === "year" ? 6 : 12), max };
+  }, [base, periodMode]);
   const byCat = useMemo(() => { const m = {}; base.forEach((e) => { m[e.category] = (m[e.category] || 0) + (e.cnyAmount || 0); }); return Object.entries(m).map(([id, v]) => ({ ...catOf(id), value: v })).sort((a, b) => b.value - a.value); }, [base]);
   const byCur = useMemo(() => { const m = {}, loc = {}; base.forEach((e) => { m[e.currency] = (m[e.currency] || 0) + (e.cnyAmount || 0); loc[e.currency] = (loc[e.currency] || 0) + (e.localAmount || 0); }); return Object.entries(m).map(([code, v]) => ({ code, value: v, local: loc[code] })).sort((a, b) => b.value - a.value); }, [base]);
   const daily = useMemo(() => { const m = new Map(); base.forEach((e) => m.set(e.date, (m.get(e.date) || 0) + (e.cnyAmount || 0))); return [...m.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1).slice(-7); }, [base]);
@@ -661,6 +718,26 @@ function StatsScreen({ expenses, trips, activeTrip, activeId, hide, setHide, rat
             {rates && <RefreshCw size={12} />}
           </div>
         </Card>
+        {/* 按月 / 按年 */}
+        <Card>
+          <div className="flex items-center justify-between">
+            <span style={{ fontSize: 16.5, fontWeight: 700, letterSpacing: "-0.01em" }}>{periodMode === "year" ? "年度支出" : "月度支出"}</span>
+            <div className="flex rounded-full p-0.5" style={{ background: C.fill }}>
+              {[["month", "按月"], ["year", "按年"]].map(([v, l]) => <button key={v} onClick={() => setPeriodMode(v)} className="px-3 py-1 rounded-full active:opacity-70" style={{ fontSize: 12.5, fontWeight: 600, background: periodMode === v ? "#fff" : "transparent", color: periodMode === v ? C.accent : C.sec, boxShadow: periodMode === v ? "0 1px 4px rgba(0,0,0,.08)" : "none" }}>{l}</button>)}
+            </div>
+          </div>
+          <div className="flex flex-col gap-3" style={{ marginTop: 14 }}>
+            {byPeriod.rows.length === 0 && <div style={{ fontSize: 13, color: C.sec, textAlign: "center", padding: "10px 0" }}>暂无记录</div>}
+            {byPeriod.rows.map((r) => { const label = periodMode === "year" ? `${r.k} 年` : `${+r.k.slice(0, 4)} 年 ${+r.k.slice(5, 7)} 月`; const pct = byPeriod.max > 0 ? r.v / byPeriod.max * 100 : 0;
+              return <div key={r.k}>
+                <div className="flex items-baseline justify-between">
+                  <span style={{ fontSize: 14, fontWeight: 600, ...NUM }}>{label} <span style={{ fontSize: 11.5, color: C.sec, fontWeight: 400 }}>{r.n} 笔</span></span>
+                  <span style={{ fontSize: 14, fontWeight: 700, ...NUM, color: C.ink }}>{hide ? "¥ ****" : "¥" + fmt(r.v)}</span>
+                </div>
+                <div className="rounded-full overflow-hidden" style={{ height: 5, background: C.fill, marginTop: 5 }}><div style={{ width: `${pct}%`, height: "100%", background: C.accent, borderRadius: 3 }} /></div>
+              </div>; })}
+          </div>
+        </Card>
         {/* 每日趋势 */}
         <Card>
           <CardHead title="每日支出趋势" />
@@ -715,14 +792,20 @@ function MapScreen({ places, trips, expenses, tripSpend, onOpen, onToggleSaved, 
   const { paths, pins, journey } = useMemo(() => {
     if (!world) return { paths: [], pins: [], journey: "" };
     const projection = d3.geoNaturalEarth1(); let fit = world;
-    if (places.length) { let a = Infinity, b = -Infinity, c = Infinity, d = -Infinity; places.forEach((p) => { a = Math.min(a, p.lng); b = Math.max(b, p.lng); c = Math.min(c, p.lat); d = Math.max(d, p.lat); });
+    const fitPts = places.filter((p) => p && typeof p.lat === "number" && typeof p.lng === "number" && isFinite(p.lat) && isFinite(p.lng) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180);
+    if (fitPts.length) { let a = Infinity, b = -Infinity, c = Infinity, d = -Infinity; fitPts.forEach((p) => { a = Math.min(a, p.lng); b = Math.max(b, p.lng); c = Math.min(c, p.lat); d = Math.max(d, p.lat); });
       const pd = Math.max(16, (b - a) * 0.3, (d - c) * 0.3); a -= pd; b += pd; c -= pd; d += pd; fit = { type: "Polygon", coordinates: [[[a, c], [b, c], [b, d], [a, d], [a, c]]] }; }
     try { projection.fitExtent([[pad, pad], [W - pad, H - pad]], fit); } catch { projection.fitExtent([[pad, pad], [W - pad, H - pad]], world); }
-    if (projection.scale() > 1300) projection.scale(1300);
+    if (projection.scale() > 1300) {
+      projection.scale(1300);
+      const cc = d3.geoCentroid(fit); const cxy = projection(cc);
+      if (cxy) { const t = projection.translate(); projection.translate([t[0] + (W / 2 - cxy[0]), t[1] + (H / 2 - cxy[1])]); }
+    }
     const path = d3.geoPath(projection);
     const paths = world.features.map((f, i) => ({ d: path(f), i }));
-    const pins = places.map((p) => { const xy = projection([p.lng, p.lat]); return xy ? { ...p, x: xy[0], y: xy[1] } : null; }).filter(Boolean);
-    const sorted = [...places].filter((p) => p.lat != null).sort((a, b) => (a.date < b.date ? -1 : 1)); let journey = "";
+    const validCoord = (p) => p && typeof p.lat === "number" && typeof p.lng === "number" && isFinite(p.lat) && isFinite(p.lng) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180;
+    const pins = places.filter(validCoord).map((p) => { const xy = projection([p.lng, p.lat]); return xy ? { ...p, x: xy[0], y: xy[1] } : null; }).filter(Boolean);
+    const sorted = [...places].filter(validCoord).sort((a, b) => (a.date < b.date ? -1 : 1)); let journey = "";
     sorted.forEach((p, i) => { const xy = projection([p.lng, p.lat]); if (xy) journey += (i ? " L" : "M") + xy[0].toFixed(1) + " " + xy[1].toFixed(1); });
     return { paths, pins, journey };
   }, [world, places]);
@@ -984,7 +1067,7 @@ function TripSheet({ init, onClose, onSave, onDelete }) {
     </div>
     <div className="flex gap-2 mt-2">
       {init && <button onClick={() => onDelete(init.id)} className="px-5 py-3.5 rounded-2xl active:opacity-70" style={{ color: C.accent, background: C.card, fontWeight: 600, fontSize: 15, border: `1px solid ${C.sep}` }}>删除</button>}
-      <button onClick={() => onSave(f)} disabled={!f.name.trim()} className="flex-1 py-3.5 rounded-2xl active:opacity-70" style={{ background: f.name.trim() ? C.accent : C.ter, color: "#fff", fontWeight: 700, fontSize: 16 }}>{init ? "保存" : "创建"}</button>
+      <button onClick={() => { const cl = { ...f }; const bad = (v, m) => v == null || !isFinite(v) || Math.abs(v) > m; if (bad(cl.lat, 90) || bad(cl.lng, 180)) { cl.lat = null; cl.lng = null; } onSave(cl); }} disabled={!f.name.trim()} className="flex-1 py-3.5 rounded-2xl active:opacity-70" style={{ background: f.name.trim() ? C.accent : C.ter, color: "#fff", fontWeight: 700, fontSize: 16 }}>{init ? "保存" : "创建"}</button>
     </div>
   </Sheet>;
 }
