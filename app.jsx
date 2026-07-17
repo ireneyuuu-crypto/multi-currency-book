@@ -1044,7 +1044,7 @@ function ExpenseSheet({ init, trips, activeTripId, onClose, onSave, onDelete }) 
     <Field label="名称 / 备注"><input value={f.note} onChange={(e) => set("note", e.target.value)} placeholder="如 蓝瓶咖啡" className="w-full px-3.5 py-3 outline-none text-[15px]" style={inputStyle} /></Field>
     <Field label="商家 / 地点（可选）"><input value={f.merchant} onChange={(e) => set("merchant", e.target.value)} placeholder="如 银座店 / 银座四丁目" className="w-full px-3.5 py-3 outline-none text-[15px]" style={inputStyle} /></Field>
     <div className="flex gap-2">
-      <Field label="消费日期" className="flex-1 min-w-0" style={{ flex: "1 1 0%", minWidth: 0, overflow: "hidden" }}><input type="date" value={f.expenseDate} onChange={(e) => set("expenseDate", e.target.value)} className="w-full px-3.5 py-3 outline-none text-[15px]" style={ ...inputStyle, minWidth: 0, maxWidth: "100%", width: "100%", display: "block", WebkitAppearance: "none", appearance: "none", textAlign: "left" } /></Field>
+      <Field label="消费日期" className="flex-1 min-w-0" style={{ flex: "1 1 0%", minWidth: 0, overflow: "hidden" }}><input type="date" value={f.expenseDate} onChange={(e) => set("expenseDate", e.target.value)} className="w-full px-3.5 py-3 outline-none text-[15px]" style={{ ...inputStyle, minWidth: 0, maxWidth: "100%", width: "100%", display: "block", WebkitAppearance: "none", appearance: "none", textAlign: "left" }} /></Field>
       <Field label="行程" className="flex-1 min-w-0" style={{ flex: "1 1 0%", minWidth: 0, overflow: "hidden" }}><Select value={f.tripId} onChange={(v) => set("tripId", v)} options={[{ v: "none", l: "不归入行程" }, ...trips.map((t) => ({ v: t.id, l: t.name }))]} /></Field>
     </div>
     <div className="flex gap-2 mt-2">
@@ -1156,7 +1156,7 @@ function PlaceSheet({ init, trips, onClose, onSave, onDelete }) {
       <Field label="经度 lng" className="flex-1"><input type="number" inputMode="decimal" value={f.lng ?? ""} onChange={(e) => set("lng", parseFloat(e.target.value))} placeholder="135.77" className="w-full px-3.5 py-3 outline-none text-[15px]" style={{ ...inputStyle, ...NUM }} /></Field>
     </div>}
     <div className="flex gap-2">
-      <Field label="日期" className="flex-1 min-w-0" style={{ flex: "1 1 0%", minWidth: 0, overflow: "hidden" }}><input type="date" value={f.date} onChange={(e) => set("date", e.target.value)} className="w-full px-3.5 py-3 outline-none text-[15px]" style={ ...inputStyle, minWidth: 0, maxWidth: "100%", width: "100%", display: "block", WebkitAppearance: "none", appearance: "none", textAlign: "left" } /></Field>
+      <Field label="日期" className="flex-1 min-w-0" style={{ flex: "1 1 0%", minWidth: 0, overflow: "hidden" }}><input type="date" value={f.date} onChange={(e) => set("date", e.target.value)} className="w-full px-3.5 py-3 outline-none text-[15px]" style={{ ...inputStyle, minWidth: 0, maxWidth: "100%", width: "100%", display: "block", WebkitAppearance: "none", appearance: "none", textAlign: "left" }} /></Field>
       <Field label="关联行程" className="flex-1 min-w-0" style={{ flex: "1 1 0%", minWidth: 0, overflow: "hidden" }}><Select value={f.tripId} onChange={(v) => set("tripId", v)} options={[{ v: "none", l: "不关联" }, ...trips.map((t) => ({ v: t.id, l: t.name }))]} /></Field>
     </div>
     <Field label="简报 / 备注"><textarea value={f.note} onChange={(e) => set("note", e.target.value)} rows={3} placeholder="这趟在这里做了什么、印象、推荐…" className="w-full px-3.5 py-3 outline-none text-[15px]" style={{ ...inputStyle, resize: "none", lineHeight: 1.5 }} /></Field>
