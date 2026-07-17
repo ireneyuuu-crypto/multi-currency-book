@@ -468,7 +468,7 @@ function App() {
       </div>
 
       <button onClick={addAction[tab]} aria-label="新增" className="absolute flex items-center justify-center rounded-full active:scale-95 transition-transform"
-        style={{ right: 18, bottom: "calc(74px + var(--safe-bottom, env(safe-area-inset-bottom)))", width: 56, height: 56, background: C.accent, color: "#fff", zIndex: 40, boxShadow: "0 8px 22px rgba(255,79,98,.4)" }}>
+        style={{ right: 18, bottom: "calc(66px + min(var(--safe-bottom, env(safe-area-inset-bottom)), 24px))", width: 56, height: 56, background: C.accent, color: "#fff", zIndex: 40, boxShadow: "0 8px 22px rgba(255,79,98,.4)" }}>
         <Plus size={27} strokeWidth={2.6} /></button>
 
       <BottomTab tab={tab} setTab={setTab} />
@@ -914,7 +914,7 @@ function TripsScreen({ trips, activeId, hide, setHide, tripSpend, tripExpCount, 
 /* ═══════════ 底部 Tab ═══════════ */
 function BottomTab({ tab, setTab }) {
   const items = [{ id: "list", label: "明细", Icon: Wallet }, { id: "stats", label: "统计", Icon: PieChart }, { id: "map", label: "足迹", Icon: Globe }, { id: "trips", label: "行程", Icon: Briefcase }];
-  return <nav className="flex shrink-0" style={{ background: "rgba(250,246,241,.82)", ...GLASS, borderTop: `0.5px solid ${C.hair}`, paddingBottom: "var(--safe-bottom, env(safe-area-inset-bottom))", zIndex: 30 }}>
+  return <nav className="flex shrink-0" style={{ background: "rgba(250,246,241,.82)", ...GLASS, borderTop: `0.5px solid ${C.hair}`, paddingBottom: "min(var(--safe-bottom, env(safe-area-inset-bottom)), 24px)", zIndex: 30 }}>
     {items.map((t) => { const on = tab === t.id; return <button key={t.id} onClick={() => setTab(t.id)} className="flex-1 flex flex-col items-center gap-0.5 pt-2 pb-1.5 active:opacity-50" style={{ color: on ? C.accent : C.sec, minHeight: 50 }}>
       <t.Icon size={23} strokeWidth={on ? 2.4 : 1.9} /><span style={{ fontSize: 10.5, fontWeight: on ? 700 : 500 }}>{t.label}</span></button>; })}
   </nav>;
@@ -932,11 +932,34 @@ function Empty({ Icon, title, desc, action, onAction }) {
 
 /* ═══════════ Bottom Sheet 基座 ═══════════ */
 function Sheet({ children, onClose, pad = 20 }) {
+  /* SHEET_DRAG：下拉关闭手势——内容滚动位于顶部时，向下拖拽跟手，超过阈值关闭，否则弹回 */
+  const panelRef = useRef(null);
+  const dragRef = useRef({ y0: 0, dy: 0, on: false });
+  useEffect(() => {
+    const p = panelRef.current; if (!p) return;
+    const start = (e) => { if (p.scrollTop > 2) return; dragRef.current = { y0: e.touches[0].clientY, dy: 0, on: true }; p.style.transition = "none"; };
+    const move = (e) => {
+      const d = dragRef.current; if (!d.on) return;
+      const dy = e.touches[0].clientY - d.y0;
+      if (dy <= 0) { d.on = false; p.style.transform = ""; return; }
+      if (p.scrollTop <= 0) { e.preventDefault(); d.dy = dy; p.style.transform = `translateY(${dy}px)`; }
+    };
+    const end = () => {
+      const d = dragRef.current; if (!d.on) return; d.on = false;
+      p.style.transition = "transform .22s ease";
+      if (d.dy > 90) { p.style.transform = "translateY(105%)"; setTimeout(onClose, 190); }
+      else p.style.transform = "translateY(0)";
+    };
+    p.addEventListener("touchstart", start, { passive: true });
+    p.addEventListener("touchmove", move, { passive: false });
+    p.addEventListener("touchend", end, { passive: true });
+    return () => { p.removeEventListener("touchstart", start); p.removeEventListener("touchmove", move); p.removeEventListener("touchend", end); };
+  }, [onClose]);
   return <div className="absolute inset-0 flex items-end justify-center" style={{ background: "rgba(0,0,0,.4)", zIndex: 50 }} onClick={onClose}>
-    <div onClick={(e) => e.stopPropagation()} className="w-full overflow-y-auto" style={{ background: C.bg, borderTopLeftRadius: 26, borderTopRightRadius: 26, maxHeight: "92vh", padding: pad, paddingTop: 12, boxShadow: "0 -10px 40px rgba(0,0,0,.22)", overflowX: "hidden", maxWidth: "100%" }}>
+    <div ref={panelRef} onClick={(e) => e.stopPropagation()} className="w-full overflow-y-auto" style={{ background: C.bg, borderTopLeftRadius: 26, borderTopRightRadius: 26, maxHeight: "92vh", padding: pad, paddingTop: 12, boxShadow: "0 -10px 40px rgba(0,0,0,.22)", overflowX: "hidden", maxWidth: "100%", overscrollBehavior: "contain" }}>
       <div style={{ width: 38, height: 5, borderRadius: 3, background: C.ter, margin: "0 auto 16px" }} />
       {children}
-      <div style={{ height: "var(--safe-bottom, env(safe-area-inset-bottom))" }} />
+      <div style={{ height: "min(var(--safe-bottom, env(safe-area-inset-bottom)), 20px)" }} />
     </div>
   </div>;
 }
@@ -1021,8 +1044,8 @@ function ExpenseSheet({ init, trips, activeTripId, onClose, onSave, onDelete }) 
     <Field label="名称 / 备注"><input value={f.note} onChange={(e) => set("note", e.target.value)} placeholder="如 蓝瓶咖啡" className="w-full px-3.5 py-3 outline-none text-[15px]" style={inputStyle} /></Field>
     <Field label="商家 / 地点（可选）"><input value={f.merchant} onChange={(e) => set("merchant", e.target.value)} placeholder="如 银座店 / 银座四丁目" className="w-full px-3.5 py-3 outline-none text-[15px]" style={inputStyle} /></Field>
     <div className="flex gap-2">
-      <Field label="消费日期" className="flex-1"><input type="date" value={f.expenseDate} onChange={(e) => set("expenseDate", e.target.value)} className="w-full px-3.5 py-3 outline-none text-[15px]" style={inputStyle} /></Field>
-      <Field label="行程" className="flex-1"><Select value={f.tripId} onChange={(v) => set("tripId", v)} options={[{ v: "none", l: "不归入行程" }, ...trips.map((t) => ({ v: t.id, l: t.name }))]} /></Field>
+      <Field label="消费日期" className="flex-1 min-w-0"><input type="date" value={f.expenseDate} onChange={(e) => set("expenseDate", e.target.value)} className="w-full px-3.5 py-3 outline-none text-[15px]" style={{ ...inputStyle, minWidth: 0 }} /></Field>
+      <Field label="行程" className="flex-1 min-w-0"><Select value={f.tripId} onChange={(v) => set("tripId", v)} options={[{ v: "none", l: "不归入行程" }, ...trips.map((t) => ({ v: t.id, l: t.name }))]} /></Field>
     </div>
     <div className="flex gap-2 mt-2">
       {init && <button onClick={() => onDelete(init.id)} className="px-5 py-3.5 rounded-2xl active:opacity-70" style={{ color: C.accent, background: C.card, fontWeight: 600, fontSize: 15, border: `1px solid ${C.sep}` }}>删除</button>}
@@ -1133,8 +1156,8 @@ function PlaceSheet({ init, trips, onClose, onSave, onDelete }) {
       <Field label="经度 lng" className="flex-1"><input type="number" inputMode="decimal" value={f.lng ?? ""} onChange={(e) => set("lng", parseFloat(e.target.value))} placeholder="135.77" className="w-full px-3.5 py-3 outline-none text-[15px]" style={{ ...inputStyle, ...NUM }} /></Field>
     </div>}
     <div className="flex gap-2">
-      <Field label="日期" className="flex-1"><input type="date" value={f.date} onChange={(e) => set("date", e.target.value)} className="w-full px-3.5 py-3 outline-none text-[15px]" style={inputStyle} /></Field>
-      <Field label="关联行程" className="flex-1"><Select value={f.tripId} onChange={(v) => set("tripId", v)} options={[{ v: "none", l: "不关联" }, ...trips.map((t) => ({ v: t.id, l: t.name }))]} /></Field>
+      <Field label="日期" className="flex-1 min-w-0"><input type="date" value={f.date} onChange={(e) => set("date", e.target.value)} className="w-full px-3.5 py-3 outline-none text-[15px]" style={{ ...inputStyle, minWidth: 0 }} /></Field>
+      <Field label="关联行程" className="flex-1 min-w-0"><Select value={f.tripId} onChange={(v) => set("tripId", v)} options={[{ v: "none", l: "不关联" }, ...trips.map((t) => ({ v: t.id, l: t.name }))]} /></Field>
     </div>
     <Field label="简报 / 备注"><textarea value={f.note} onChange={(e) => set("note", e.target.value)} rows={3} placeholder="这趟在这里做了什么、印象、推荐…" className="w-full px-3.5 py-3 outline-none text-[15px]" style={{ ...inputStyle, resize: "none", lineHeight: 1.5 }} /></Field>
     <Field label={`照片${photos.length ? " · " + photos.length : ""}`}>
@@ -1190,7 +1213,7 @@ function PlaceDetail({ meta, trips, tripSpend, onClose, onEdit, onToggleSaved })
           <div className="grid grid-cols-3 gap-1.5">{p.photos.map((src, i) => <button key={i} onClick={() => setViewer(src)} className="active:opacity-80" style={{ aspectRatio: "1", borderRadius: 12, overflow: "hidden", background: C.fill }}><img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></button>)}</div>
         </div>}
         <button onClick={() => onEdit(p)} className="w-full py-3.5 rounded-2xl text-[15px] font-bold active:opacity-70" style={{ background: C.card, color: C.accent, boxShadow: "0 2px 10px rgba(0,0,0,.04)" }}>编辑这个地点</button>
-        <div style={{ height: "var(--safe-bottom, env(safe-area-inset-bottom))" }} />
+        <div style={{ height: "min(var(--safe-bottom, env(safe-area-inset-bottom)), 20px)" }} />
       </div>
     </div>
     {viewer && <div className="absolute inset-0 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.92)", zIndex: 80 }} onClick={() => setViewer(null)}><img src={viewer} alt="" style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: 8 }} /></div>}

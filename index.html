@@ -28,7 +28,7 @@
 <style>
   :root { --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); }
   html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; -webkit-text-size-adjust: 100%; background: #FAF6F1; }
-  body { position: fixed; inset: 0; width: 100%; touch-action: manipulation; }
+  body { width: 100%; touch-action: manipulation; }
   #root { height: 100%; overflow: hidden; }
   #root > div { background: #FAF6F1 !important; }
   /* App 外壳跟随真实视口高度（覆盖内联 100vh；body 为 fixed inset:0，其高度即实际可视区，全机型/横竖屏自适应） */
